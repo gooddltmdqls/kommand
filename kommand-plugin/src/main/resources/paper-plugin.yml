@@ -1,5 +1,5 @@
 name: 'Kommand'
 version: '${version}'
-main: 'io.github.monun.kommand.plugin.KommandPlugin'
+main: 'xyz.icetang.lib.kommand.plugin.KommandPlugin'
 api-version: '${paperVersion}'
-loader: 'io.github.monun.kommand.plugin.KommandPluginLoader'
+loader: 'xyz.icetang.lib.kommand.plugin.KommandPluginLoader'
