@@ -14,13 +14,38 @@ tasks {
         archiveClassifier.set("javadoc")
         dependsOn("dokkaHtml")
 
-        from("$buildDir/dokka/html/") {
+        from("${layout.buildDirectory.asFile.get()}/dokka/html/") {
             include("**")
         }
     }
 }
 
 publishing {
+    repositories {
+        mavenLocal()
+
+        maven {
+            name = "central"
+
+            credentials.runCatching {
+                val nexusUsername: String by project
+                val nexusPassword: String by project
+                username = nexusUsername
+                password = nexusPassword
+            }.onFailure {
+                logger.warn("Failed to load nexus credentials, Check the gradle.properties")
+            }
+
+            url = uri(
+                if ("SNAPSHOT" in version as String) {
+                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                } else {
+                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                }
+            )
+        }
+    }
+
     publications {
         create<MavenPublication>("kommand-api") {
             artifactId = "kommand-api"
