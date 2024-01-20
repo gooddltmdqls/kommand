@@ -1,11 +1,10 @@
 /*
- * Kommand
- * Copyright (C) 2021 Monun
+ * Copyright (C) 2023 Monun
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,10 +12,10 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package xyz.icetang.lib.kommand.internal.compat.v1_17_1
+package xyz.icetang.lib.kommand.internal.compat.v1_20_4
 
 import com.destroystokyo.paper.profile.CraftPlayerProfile
 import com.destroystokyo.paper.profile.PlayerProfile
@@ -32,12 +31,14 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import xyz.icetang.lib.kommand.*
 import xyz.icetang.lib.kommand.internal.AbstractKommandArgument
+import xyz.icetang.lib.kommand.internal.ReflectionSupport
 import xyz.icetang.lib.kommand.wrapper.*
 import xyz.icetang.lib.kommand.wrapper.Rotation
 import io.papermc.paper.brigadier.PaperBrigadier
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextColor
+import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.*
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument
@@ -48,19 +49,21 @@ import net.minecraft.commands.arguments.item.ItemArgument
 import net.minecraft.commands.arguments.item.ItemPredicateArgument
 import net.minecraft.commands.synchronization.SuggestionProviders
 import net.minecraft.core.Vec3i
-import net.minecraft.network.chat.TranslatableComponent
+import net.minecraft.core.registries.Registries
+import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ColumnPos
 import net.minecraft.world.level.block.state.pattern.BlockInWorld
 import org.bukkit.*
 import org.bukkit.advancement.Advancement
 import org.bukkit.block.Block
 import org.bukkit.block.data.BlockData
-import org.bukkit.craftbukkit.v1_17_R1.CraftParticle
-import org.bukkit.craftbukkit.v1_17_R1.block.CraftBlock
-import org.bukkit.craftbukkit.v1_17_R1.block.data.CraftBlockData
-import org.bukkit.craftbukkit.v1_17_R1.enchantments.CraftEnchantment
-import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack
-import org.bukkit.craftbukkit.v1_17_R1.potion.CraftPotionEffectType
-import org.bukkit.craftbukkit.v1_17_R1.util.CraftNamespacedKey
+import org.bukkit.craftbukkit.v1_20_R3.CraftParticle
+import org.bukkit.craftbukkit.v1_20_R3.block.CraftBlock
+import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData
+import org.bukkit.craftbukkit.v1_20_R3.enchantments.CraftEnchantment
+import org.bukkit.craftbukkit.v1_20_R3.inventory.CraftItemStack
+import org.bukkit.craftbukkit.v1_20_R3.potion.CraftPotionEffectType
+import org.bukkit.craftbukkit.v1_20_R3.util.CraftNamespacedKey
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -102,7 +105,6 @@ open class NMSKommandArgument<T>(
         checkOverrideSuggestions(type.javaClass)
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun from(context: NMSKommandContext, name: String): T {
         return provider(context, name)
     }
@@ -240,8 +242,11 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     }
 
     override fun summonableEntity(): KommandArgument<NamespacedKey> {
-        return EntitySummonArgument.id() to SuggestionProviders.SUMMONABLE_ENTITIES provide { context, name ->
-            CraftNamespacedKey.fromMinecraft(EntitySummonArgument.getSummonableEntity(context, name))
+        return ResourceArgument.resource(
+            commandBuildContext,
+            Registries.ENTITY_TYPE
+        ) to SuggestionProviders.SUMMONABLE_ENTITIES provide { context, name ->
+            CraftNamespacedKey.fromMinecraft(ResourceArgument.getSummonableEntityType(context, name).key().location())
         }
     }
 
@@ -252,13 +257,14 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         }
     }
 
-    private val enchantmentMap = Enchantment.values().map { it as CraftEnchantment }.associateBy { it.handle }
+    private val enchantmentMap = Registry.ENCHANTMENT.map { it as CraftEnchantment }.associateBy { it.handle }
 
     override fun enchantment(): KommandArgument<Enchantment> {
-        return ItemEnchantmentArgument.enchantment() provide { context, name ->
-            val nms = ItemEnchantmentArgument.getEnchantment(context, name)
+        return ResourceArgument.resource(commandBuildContext, Registries.ENCHANTMENT) provide { context, name ->
+            val key = ResourceArgument.getEnchantment(context, name)
+            val value = key.value()
 
-            enchantmentMap[nms] ?: error("Not found enchantment ${nms.getFullname(0)}")
+            enchantmentMap[value] ?: error("Not found enchantment ${value.getFullname(0)}")
         }
     }
 
@@ -268,12 +274,14 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         }
     }
 
-    private val mobEffectMap = PotionEffectType.values().map { it as CraftPotionEffectType }.associateBy { it.handle }
+    private val mobEffectMap = Registry.POTION_EFFECT_TYPE.map { it as CraftPotionEffectType }.associateBy { it.handle }
 
     override fun mobEffect(): KommandArgument<PotionEffectType> {
-        return MobEffectArgument.effect() provide { context, name ->
-            val nms = MobEffectArgument.getEffect(context, name)
-            mobEffectMap[nms] ?: error("Not found mob effect ${nms.displayName}")
+        return ResourceArgument.resource(commandBuildContext, Registries.MOB_EFFECT) provide { context, name ->
+            val key = ResourceArgument.getMobEffect(context, name)
+            val value = key.value()
+
+            mobEffectMap[value] ?: error("Not found mob effect ${value.displayName}")
         }
     }
 
@@ -291,8 +299,8 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     }
 
     override fun particle(): KommandArgument<Particle> {
-        return ParticleArgument.particle() provide { context, name ->
-            CraftParticle.toBukkit(ParticleArgument.getParticle(context, name))
+        return ParticleArgument.particle(commandBuildContext) provide { context, name ->
+            CraftParticle.minecraftToBukkit(ParticleArgument.getParticle(context, name).type)
         }
     }
 
@@ -301,7 +309,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
             val nms = RangeArgument.Ints.getRange(context, name)
             val min = nms.min ?: Int.MIN_VALUE
             val max = nms.max ?: Int.MAX_VALUE
-            min..max
+            min as Int..max as Int
         }
     }
 
@@ -311,14 +319,14 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
             val nms = RangeArgument.Floats.getRange(context, name)
             val min = nms.min ?: -Double.MAX_VALUE
             val max = nms.max ?: Double.MAX_VALUE
-            min..max
+            min as Double..max as Double
         }
     }
 
     override fun advancement(): KommandArgument<Advancement> {
         return ResourceLocationArgument.id() provide { context, name ->
             val nms = ResourceLocationArgument.getAdvancement(context, name)
-            nms.bukkit
+            nms.toBukkit()
         }
     }
 
@@ -333,19 +341,19 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
 
     override fun displaySlot(): KommandArgument<DisplaySlot> {
         return ScoreboardSlotArgument.displaySlot() provide { context, name ->
-            displaySlots[ScoreboardSlotArgument.getDisplaySlot(context, name)]
+            displaySlots[ScoreboardSlotArgument.getDisplaySlot(context, name).id()]
         }
     }
 
     override fun score(): KommandArgument<String> {
         return ScoreHolderArgument.scoreHolder() provide { context, name ->
-            ScoreHolderArgument.getName(context, name)
+            ScoreHolderArgument.getName(context, name).scoreboardName
         }
     }
 
     override fun scores(): KommandArgument<Collection<String>> {
         return ScoreHolderArgument.scoreHolders() provide { context, name ->
-            ScoreHolderArgument.getNames(context, name)
+            ScoreHolderArgument.getNames(context, name).map { it.scoreboardName }
         }
     }
 
@@ -355,11 +363,16 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         }
     }
 
+//    new SimpleCommandExceptionType(Component.translatable("commands.team.option.seeFriendlyInvisibles.alreadyEnabled"));
+
     /**
      * TeamArgument의 error
      */
-    private val errorTeamNotFound = DynamicCommandExceptionType { `object`: Any ->
-        TranslatableComponent("team.notFound", `object`)
+    private val errorTeamNotFound: DynamicCommandExceptionType = DynamicCommandExceptionType { name: Any? ->
+        net.minecraft.network.chat.Component.translatable(
+            "team.notFound",
+            name
+        )
     }
 
     override fun team(): KommandArgument<Team> {
@@ -390,10 +403,18 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         return UuidArgument.uuid() provide UuidArgument::getUuid
     }
 
+    companion object {
+        private val commandBuildContext: CommandBuildContext = ReflectionSupport.getFieldInstance(
+            MinecraftServer.getServer().resources.managers,
+            "commandBuildContext",
+            "c"
+        )
+    }
+
     // net.minecraft.commands.arguments.blocks
 
     override fun blockPredicate(): KommandArgument<(Block) -> Boolean> {
-        return BlockPredicateArgument.blockPredicate() provide { context, name ->
+        return BlockPredicateArgument.blockPredicate(commandBuildContext) provide { context, name ->
             { block ->
                 BlockPredicateArgument.getBlockPredicate(context, name)
                     .test(BlockInWorld(context.source.level, (block as CraftBlock).position, true))
@@ -402,7 +423,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     }
 
     override fun blockState(): KommandArgument<BlockData> {
-        return BlockStateArgument.block() provide { context, name ->
+        return BlockStateArgument.block(commandBuildContext) provide { context, name ->
             CraftBlockData.fromData(BlockStateArgument.getBlock(context, name).state)
         }
     }
@@ -410,6 +431,18 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     // net.minecraft.commands.arguments.coordinates
 
     override fun blockPosition(type: PositionLoadType): KommandArgument<BlockPosition3D> {
+        /**
+         * Issue [https://github.com/monun/kommand/issues/18]
+         *
+         * mojang mapping -> spigot mapping 변환시 상속된 타입의 메서드 이름 or 필드 이름을 잘 감지하지 못함
+         * 변수의 타입을 메서드, 필드가 선언된 타입으로 정확히 선언해야함
+         * [net.minecraft.core.BlockPos]의 경우 [net.minecraft.core.Vec3i]를 상속받아 상위의 메서드를 가지고 있음
+         * BlockPos#getX <- 실패
+         * Vec3i#getX <- 성공
+         *
+         * 아마 remapping 작업이 다음과 같은 바이트 코드만 감지하는듯
+         * invokeVirtual 'Vec3i#getX'
+         */
         return BlockPosArgument.blockPos() provide { context, name ->
             val blockPosition: Vec3i = when (type) {
                 PositionLoadType.LOADED -> BlockPosArgument.getLoadedBlockPos(context, name)
@@ -422,7 +455,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
 
     override fun blockPosition2D(): KommandArgument<BlockPosition2D> {
         return ColumnPosArgument.columnPos() provide { context, name ->
-            val columnPosition = ColumnPosArgument.getColumnPos(context, name)
+            val columnPosition: ColumnPos = ColumnPosArgument.getColumnPos(context, name)
             BlockPosition2D(columnPosition.x, columnPosition.z)
         }
     }
@@ -469,20 +502,21 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     }
 
     override fun item(): KommandArgument<ItemStack> {
-        return ItemArgument.item() provide { context, name ->
+        return ItemArgument.item(commandBuildContext) provide { context, name ->
             CraftItemStack.asBukkitCopy(ItemArgument.getItem(context, name).createItemStack(1, false))
         }
     }
 
     override fun itemPredicate(): KommandArgument<(ItemStack) -> Boolean> {
-        return ItemPredicateArgument.itemPredicate() provide { context, name ->
+        return ItemPredicateArgument.itemPredicate(commandBuildContext) provide { context, name ->
             { itemStack ->
                 ItemPredicateArgument.getItemPredicate(context, name).test(CraftItemStack.asNMSCopy(itemStack))
             }
         }
     }
 
-    private val unknownArgument = SimpleCommandExceptionType(TranslatableComponent("command.unknown.argument"))
+    private val unknownArgument =
+        SimpleCommandExceptionType(net.minecraft.network.chat.Component.translatable("command.unknown.argument"))
 
     override fun <T> dynamic(
         type: StringType,
