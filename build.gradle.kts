@@ -33,7 +33,7 @@ subprojects {
 idea {
     module {
         excludeDirs.add(file(".server"))
-        excludeDirs.addAll(allprojects.map { it.layout.buildDirectory.asFile.get() })
+        excludeDirs.addAll(allprojects.map { it.buildDir })
         excludeDirs.addAll(allprojects.map { it.file(".gradle") })
     }
 }

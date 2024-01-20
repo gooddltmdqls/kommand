@@ -20,6 +20,8 @@ tasks {
     }
 
     register<Jar>("reobfJar") {
+        archiveClassifier.set("reobf")
+
         from(sourceSets["main"].output)
         subprojects {
             val reobfJar = tasks.named("reobfJar").get() as io.papermc.paperweight.tasks.RemapJar
@@ -37,7 +39,7 @@ tasks {
         archiveClassifier.set("javadoc")
         dependsOn("dokkaHtml")
 
-        from("${layout.buildDirectory.asFile.get()}/dokka/html/") {
+        from("$buildDir/dokka/html/") {
             include("**")
         }
     }
@@ -56,36 +58,6 @@ subprojects {
 }
 
 publishing {
-    repositories {
-        mavenLocal()
-
-        maven {
-            name = "server"
-            url = rootProject.uri(".server/libraries")
-        }
-
-        maven {
-            name = "central"
-
-            credentials.runCatching {
-                val nexusUsername: String by project
-                val nexusPassword: String by project
-                username = nexusUsername
-                password = nexusPassword
-            }.onFailure {
-                logger.warn("Failed to load nexus credentials, Check the gradle.properties")
-            }
-
-            url = uri(
-                if ("SNAPSHOT" in version as String) {
-                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                } else {
-                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                }
-            )
-        }
-    }
-
     publications {
         create<MavenPublication>("kommand-core") {
             artifactId = "kommand-core"
@@ -95,12 +67,9 @@ publishing {
             if (hasProperty("dev")) {
                 artifact(tasks["devJar"])
             }
-            artifacts.removeIf { it.classifier == null }
             artifact(tasks["sourcesJar"])
             artifact(tasks["dokkaJar"])
-            artifact(tasks["reobfJar"]) {
-                classifier = null
-            }
+            artifact(tasks["reobfJar"])
 
             pom {
                 name.set("kommand-core")
@@ -138,10 +107,6 @@ publishing {
                     developerConnection.set("scm:git:ssh://github.com:gooddltmdqls/${rootProject.name}.git")
                     url.set("https://github.com/gooddltmdqls/${rootProject.name}")
                 }
-            }
-
-            afterEvaluate {
-                tasks["generateMetadataFileForKommand-corePublication"].dependsOn("reobfJar")
             }
         }
     }

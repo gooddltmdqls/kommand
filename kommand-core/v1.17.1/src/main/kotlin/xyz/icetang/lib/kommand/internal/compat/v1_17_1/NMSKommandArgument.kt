@@ -181,7 +181,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
     override fun color(): KommandArgument<TextColor> {
         return ColorArgument.color() provide { context, name ->
             ColorArgument.getColor(context, name).color?.let { color ->
-                NamedTextColor.namedColor(color) ?: TextColor.color(color)
+                NamedTextColor.ofExact(color) ?: TextColor.color(color)
             } ?: NamedTextColor.WHITE
         }
     }
