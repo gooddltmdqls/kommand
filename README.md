@@ -1,11 +1,12 @@
 # Kommand
 
 [![Java](https://img.shields.io/badge/Java-17-ED8B00.svg?logo=openjdk)](https://www.azul.com/)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.8.22-585DEF.svg?logo=kotlin)](http://kotlinlang.org)
-[![Gradle](https://img.shields.io/badge/Gradle-8.2.1-02303A.svg?logo=gradle)](https://gradle.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.22-585DEF.svg?logo=kotlin)](http://kotlinlang.org)
+[![Gradle](https://img.shields.io/badge/Gradle-8.3-02303A.svg?logo=gradle)](https://gradle.org)
 [![Maven Central](https://img.shields.io/maven-central/v/xyz.icetang.lib/kommand-api)](https://search.maven.org/artifact/xyz.icetang.lib/kommand-api)
 [![GitHub](https://img.shields.io/github/license/monun/kommand)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![YouTube](https://img.shields.io/badge/YouTube-각별-red.svg?logo=youtube)](https://www.youtube.com/channel/UCDrAR1OWC2MD4s0JLetN0MA)
+[![YouTube](https://img.shields.io/badge/YouTube-Icetang0123-red.svg?logo=youtube)](https://www.youtube.com/@icetang0123)
 
 ### Command DSL for PaperMC Plugin (Brigadier)
 
@@ -27,6 +28,9 @@
     * 1.19.4
     * 1.20
     * 1.20.1
+    * 1.20.2
+    * 1.20.3
+    * 1.20.4
 
 ---
 
