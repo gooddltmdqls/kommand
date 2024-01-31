@@ -326,8 +326,7 @@ class KommandPlugin : JavaPlugin() {
                 then("dynamicMap") {
                     val map = mapOf(
                         "apple" to Material.APPLE,
-                        "diamond" to Material.DIAMOND,
-                        "grass" to Material.SHORT_GRASS
+                        "diamond" to Material.DIAMOND
                     )
                     val mapArgument = dynamicByMap(map)
 

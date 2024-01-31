@@ -22,22 +22,22 @@ import xyz.icetang.lib.kommand.loader.KommandLoader
 import xyz.icetang.lib.kommand.node.RootNode
 import org.bukkit.plugin.Plugin
 
-@xyz.icetang.lib.kommand.KommandDSL
+@KommandDSL
 interface Kommand {
-    companion object : xyz.icetang.lib.kommand.Kommand by KommandLoader.loadCompat(xyz.icetang.lib.kommand.Kommand::class.java)
+    companion object : Kommand by KommandLoader.loadCompat(Kommand::class.java)
 
     fun register(
         plugin: Plugin,
         name: String,
         vararg aliases: String,
         init: RootNode.() -> Unit
-    ): xyz.icetang.lib.kommand.KommandDispatcher
+    ): KommandDispatcher
 }
 
 @DslMarker
 annotation class KommandDSL
 
-@xyz.icetang.lib.kommand.KommandDSL
+@KommandDSL
 class PluginKommand internal constructor(
     private val plugin: Plugin
 ) {
@@ -45,7 +45,7 @@ class PluginKommand internal constructor(
         name: String,
         vararg aliases: String,
         init: RootNode.() -> Unit
-    ) = xyz.icetang.lib.kommand.Kommand.register(plugin, name, *aliases) { init() }
+    ) = Kommand.register(plugin, name, *aliases) { init() }
 
     operator fun String.invoke(
         vararg aliases: String,
@@ -54,7 +54,7 @@ class PluginKommand internal constructor(
 }
 
 fun Plugin.kommand(
-    init: xyz.icetang.lib.kommand.PluginKommand.() -> Unit
+    init: PluginKommand.() -> Unit
 ) {
-    xyz.icetang.lib.kommand.PluginKommand(this).init()
+    PluginKommand(this).init()
 }

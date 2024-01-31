@@ -8,23 +8,21 @@ import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.jetbrains.annotations.NotNull;
 
 
 public class KommandPluginLoader implements PluginLoader {
     @Override
     public void classloader(@NotNull PluginClasspathBuilder classpathBuilder) {
-
         // check kommand
         if (isRequire("xyz.icetang.lib.kommand.Kommand")) {
             var pluginMeta = classpathBuilder.getContext().getConfiguration();
             MavenLibraryResolver resolver = new MavenLibraryResolver();
 
-            if (isReobf()) {
-                resolver.addDependency(new Dependency(new DefaultArtifact("xyz.icetang.lib:kommand:" + pluginMeta.getVersion()), null));
-            } else {
-                resolver.addDependency(new Dependency(new DefaultArtifact("xyz.icetang.lib:kommand:" + pluginMeta.getVersion() + ":dev"), null));
-            }
+            resolver.addRepository(new RemoteRepository.Builder("spring", "default", "https://repo1.maven.org/maven2/").build());
+
+            resolver.addDependency(new Dependency(new DefaultArtifact("xyz.icetang.lib:kommand-core:3.1.11"), null));
 
             // check kotlin is shadowed
             if (isRequire("kotlin.KotlinVersion")) {

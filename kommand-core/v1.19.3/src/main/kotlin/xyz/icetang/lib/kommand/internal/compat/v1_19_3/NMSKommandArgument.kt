@@ -257,7 +257,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         }
     }
 
-    private val enchantmentMap = Enchantment.values().map { it as CraftEnchantment }.associateBy { it.handle }
+    private val enchantmentMap = Enchantment.values().filter { try { it as CraftEnchantment; true } catch (_: Throwable) { false } }.map { it as CraftEnchantment }.associateBy { it.handle }
 
     override fun enchantment(): KommandArgument<Enchantment> {
         return ResourceArgument.resource(commandBuildContext, Registries.ENCHANTMENT) provide { context, name ->
@@ -274,7 +274,7 @@ class NMSKommandArgumentSupport : KommandArgumentSupport {
         }
     }
 
-    private val mobEffectMap = PotionEffectType.values().map { it as CraftPotionEffectType }.associateBy { it.handle }
+    private val mobEffectMap = PotionEffectType.values().filter { try { it as CraftPotionEffectType; true } catch (_: Throwable) { false } }.map { it as CraftPotionEffectType }.associateBy { it.handle }
 
     override fun mobEffect(): KommandArgument<PotionEffectType> {
         return ResourceArgument.resource(commandBuildContext, Registries.MOB_EFFECT) provide { context, name ->
