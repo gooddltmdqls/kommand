@@ -1,4 +1,4 @@
-package xyz.icetang.lib.kommand.plugin;
+package xyz.icetang.lib.plugin;
 
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
