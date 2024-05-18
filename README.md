@@ -10,6 +10,9 @@
 
 ### Command DSL for PaperMC Plugin (Brigadier)
 
+### ARCHIVED
+1.20.6 이후 버전은 [icemmand](https://github.com/gooddltmdqls/icemmand)를 확인하세요.
+
 ---
 
 * #### Features
